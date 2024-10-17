@@ -77,6 +77,88 @@ const generateMockMessages = (userId, isGroup = false) => {
     return messages;
 };
 
+// Login Component
+const Login = ({ onLogin }) => {
+    const [selectedUser, setSelectedUser] = useState('');
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="bg-white p-8 rounded-lg shadow-md w-96">
+                <h1 className="text-2xl font-bold mb-6 text-center">Chat App Login</h1>
+                <div className="mb-4">
+                    <select
+                        value={selectedUser}
+                        onChange={(e) => setSelectedUser(e.target.value)}
+                        className="w-full p-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    >
+                        <option value="">Select a user</option>
+                        {mockUsers.map(user => (
+                            <option key={user.id} value={user.id}>{user.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <button
+                    onClick={() => selectedUser && onLogin(mockUsers.find(u => u.id === parseInt(selectedUser)))}
+                    className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                    disabled={!selectedUser}
+                >
+                    Login
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
+// Header Component
+const Header = ({ loggedUser, onLogout }) => (
+    <div className="bg-white border-b px-4 py-2 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+            {/* <img
+                src={loggedUser.profileImage}
+                alt={loggedUser.name}
+                className="w-8 h-8 rounded-full"
+            /> */}
+            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                <User className="w-6 h-6 text-gray-600" />
+            </div>
+            <span className="font-medium">{loggedUser.name}</span>
+        </div>
+        <button
+            onClick={onLogout}
+            className="flex items-center gap-2 px-3 py-1 text-gray-600 hover:text-gray-800"
+        >
+
+            Logout
+        </button>
+    </div>
+);
+
+// ConversationHeader Component
+const ConversationHeader = ({ activeContact }) => (
+    <div className="bg-white border-b px-4 py-3 flex items-center gap-3">
+        {/* <img
+            src={activeContact.profileImage}
+            alt={activeContact.name}
+            className="w-10 h-10 rounded-full"
+        /> */}
+
+        <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+            <User className="w-6 h-6 text-gray-600" />
+        </div>
+        <div>
+            <h2 className="font-medium">{activeContact.name}</h2>
+            <span className="text-sm">
+                {activeContact.online ? (
+                    <span className="text-green-500">● Online</span>
+                ) : (
+                    <span className="text-gray-500">● Offline</span>
+                )}
+            </span>
+        </div>
+    </div>
+);
+
 // ComponentItem Component
 const ContactItem = ({ contact, isActive, onClick, lastMessage }) => (
     <div
@@ -168,7 +250,9 @@ const ChatInput = ({ onSend }) => {
 
 // Main ChatApp Component
 const ChatApp = () => {
+    const [loggedUser, setLoggedUser] = useState(null);
     const [activeContact, setActiveContact] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Generate messages for each contact
     const allMessages = mockUsers.reduce((acc, user) => {
@@ -177,6 +261,15 @@ const ChatApp = () => {
     }, {});
 
     const [messages, setMessages] = useState(allMessages);
+
+    const filteredContacts = mockUsers.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        user.id !== loggedUser?.id
+    );
+
+    if (!loggedUser) {
+        return <Login onLogin={setLoggedUser} />;
+    }
 
     const handleSend = (message) => {
         const newMessage = {
@@ -210,51 +303,57 @@ const ChatApp = () => {
     };
 
     return (
-        <div className="flex h-screen bg-white">
-            <div className="w-1/3 border-r flex flex-col">
-                <div className="p-3 border-b">
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Search contacts..."
-                            className="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:border-blue-500"
-                        />
-                        <Search className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" />
+        <div className="h-screen flex flex-col bg-white">
+            <Header loggedUser={loggedUser} onLogout={() => setLoggedUser(null)} />
+
+            <div className="flex h-screen bg-white">
+                <div className="w-1/3 border-r flex flex-col">
+                    <div className="p-3 border-b">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search contacts..."
+                                className="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:border-blue-500"
+                            />
+                            <Search className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" />
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                        {mockUsers.map((contact, index) => (
+                            <ContactItem
+                                key={contact.id}
+                                contact={contact}
+                                isActive={index === activeContact}
+                                onClick={() => setActiveContact(index)}
+                                lastMessage={messages[contact.id][messages[contact.id].length - 1].text}
+                            />
+                        ))}
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto">
-                    {mockUsers.map((contact, index) => (
-                        <ContactItem
-                            key={contact.id}
-                            contact={contact}
-                            isActive={index === activeContact}
-                            onClick={() => setActiveContact(index)}
-                            lastMessage={messages[contact.id][messages[contact.id].length - 1].text}
-                        />
-                    ))}
-                </div>
-            </div>
 
-            <div className="flex-1 flex flex-col">
-                <div className="flex-1 overflow-y-auto p-4">
-                    {Object.entries(groupMessagesByDate(messages[mockUsers[activeContact].id]))
-                        .sort((a, b) => new Date(b[0]) - new Date(a[0]))
-                        .map(([date, dateMessages]) => (
-                            <div key={date}>
-                                <DateDivider date={new Date(date)} />
-                                {dateMessages.map((message) => (
-                                    <MessageBubble
-                                        key={message.id}
-                                        message={message}
-                                        isGroup={mockUsers[activeContact].type === 'group'}
-                                    />
-                                ))}
-                            </div>
-                        ))}
+                <div className="flex-1 flex flex-col">
+                    <ConversationHeader activeContact={filteredContacts[activeContact]} />
+                    <div className="flex-1 overflow-y-auto p-4">
+                        {Object.entries(groupMessagesByDate(messages[mockUsers[activeContact].id]))
+                            .sort((a, b) => new Date(b[0]) - new Date(a[0]))
+                            .map(([date, dateMessages]) => (
+                                <div key={date}>
+                                    <DateDivider date={new Date(date)} />
+                                    {dateMessages.map((message) => (
+                                        <MessageBubble
+                                            key={message.id}
+                                            message={message}
+                                            isGroup={mockUsers[activeContact].type === 'group'}
+                                        />
+                                    ))}
+                                </div>
+                            ))}
+                    </div>
+                    <ChatInput onSend={handleSend} />
                 </div>
-                <ChatInput onSend={handleSend} />
             </div>
         </div>
+
     );
 };
 
