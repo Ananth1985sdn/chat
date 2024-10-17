@@ -54,7 +54,7 @@ const mockUsers = [
 // Generate mock messages
 const generateMockMessages = (userId, isGroup = false) => {
     const messages = [];
-    const messageCount = isGroup ? 10 : 100;
+    const messageCount = isGroup ? 10 : 10;
     const senders = isGroup ? ["Sarah Parker", "Michael Brown", "Lisa Anderson"] : [null];
 
     for (let i = 0; i < messageCount; i++) {
