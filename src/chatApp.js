@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, Send, User, Users, Paperclip, Check } from 'lucide-react';
 
 // Helper function to generate dates
@@ -253,7 +253,12 @@ const ChatApp = () => {
     const [loggedUser, setLoggedUser] = useState(null);
     const [activeContact, setActiveContact] = useState(0);
     const [searchTerm, setSearchTerm] = useState('');
-    // const [searchQuery, setSearchQuery] = useState('');
+
+    const messagesEndRef = useRef(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
     // Generate messages for each contact
     const allMessages = mockUsers.reduce((acc, user) => {
@@ -263,6 +268,10 @@ const ChatApp = () => {
 
     const [messages, setMessages] = useState(allMessages);
 
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, activeContact]);
+
     const filteredContacts = mockUsers.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
         user.id !== loggedUser?.id
@@ -271,6 +280,7 @@ const ChatApp = () => {
     if (!loggedUser) {
         return <Login onLogin={setLoggedUser} />;
     }
+
 
     const handleSend = (message) => {
         const newMessage = {
@@ -351,6 +361,7 @@ const ChatApp = () => {
                                     ))}
                                 </div>
                             ))}
+                        <div ref={messagesEndRef} />
                     </div>
                     <ChatInput onSend={handleSend} />
                 </div>
